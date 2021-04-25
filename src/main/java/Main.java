@@ -2,25 +2,20 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException, SAXException, ParserConfigurationException {
-        //String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
+    public static void main(String[] args)  {
         String fileName = "data.xml";
         List<Employee> list = parseXML(fileName);
         String json = listToJson(list);
@@ -42,24 +37,39 @@ public class Main {
         return json;
     }
 
-    private static List parseXML(String s) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document document = builder.parse(new File(s));
-        NodeList employeeElements = document.getDocumentElement().getElementsByTagName("employee");
-        //Node root = document.getDocumentElement();
-        // NodeList nodeList = root.getChildNodes();
-        ArrayList<Employee> employees = new ArrayList<>();
-        for (int i = 0; i < employeeElements.getLength(); i++) {
-            Node employee = employeeElements.item(i);
-            NamedNodeMap attributes = employee.getAttributes();
-            employees.add(new Employee(Long.parseLong(attributes.getNamedItem("id").getNodeValue()),
-                    attributes.getNamedItem("firstName").getNodeValue(),
-                    attributes.getNamedItem("lastName").getNodeValue(),
-                    attributes.getNamedItem("country").getNodeValue(),
-                    Integer.parseInt(attributes.getNamedItem("age").getNodeValue())));
+    private static List parseXML(String s) {
+        List<Employee> employees = new ArrayList<>();
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document document = builder.parse(s);
+            NodeList employeeElements = document.getDocumentElement().getElementsByTagName("employee");
+            for (int i = 0; i < employeeElements.getLength(); i++) {
+                employees.add(getEmployee(employeeElements.item(i)));
+            }
+        } catch (Exception exc) {
+            exc.printStackTrace();
         }
         return employees;
     }
-}
 
+    private static Employee getEmployee(Node node) {
+        Employee emp = new Employee();
+        if (node.getNodeType() == Node.ELEMENT_NODE) {
+            Element element = (Element) node;
+            emp.setId(Long.parseLong(getTagValue("id", element)));
+            emp.setFirstName(getTagValue("firstName", element));
+            emp.setLastName(getTagValue("lastName", element));
+            emp.setCountry(getTagValue("country", element));
+            emp.setAge(Integer.parseInt(getTagValue("age", element)));
+        }
+        return emp;
+    }
+
+    private static String getTagValue(String tag, Element element) {
+        NodeList nodeList = element.getElementsByTagName(tag).item(0).getChildNodes();
+        Node node = (Node) nodeList.item(0);
+        return node.getNodeValue();
+    }
+
+}
